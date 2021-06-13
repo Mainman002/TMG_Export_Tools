@@ -9,7 +9,7 @@ bl_info = {
     "author": "Johnathan Mueller",
     "descrtion": "A panel to batch export selected objects to .fbx",
     "blender": (2, 80, 0),
-    "version": (0, 1, 1),
+    "version": (0, 1, 2),
     "location": "View3D (ObjectMode) > Sidebar > TMG_Export Tab",
     "warning": "",
     "category": "Object"
@@ -299,24 +299,9 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col.prop(tmg_exp_vars, 'exp_apply_unit_scale', text='Apply Unit Scale')
             box_col.prop(tmg_exp_vars, 'exp_use_tspace', text='Use TSpace')
             box_col.prop(tmg_exp_vars, 'exp_embed_textures', text='Embed Textures')
-        
-        box = col.box()
-        row = box.row(align=True)
-        
-        if scene.tmg_exp_vars.exp_object_category:
-            row.prop(tmg_exp_vars, 'exp_object_category', text='', icon='DOWNARROW_HLT')
-        else:
-            row.prop(tmg_exp_vars, 'exp_object_category', text='', icon='RIGHTARROW')
             
-        row.label(text='Object Export Settings')
-        
-        if scene.tmg_exp_vars.exp_object_category:
-            box_col = box.column(align=True)
-            
-            box_col.prop(tmg_exp_vars, 'exp_apply_mesh', text='Apply Mesh')
-            box_col.prop(tmg_exp_vars, 'exp_reset_location', text='Reset Location')
-            box_col.prop(tmg_exp_vars, 'exp_reset_rotation', text='Reset Rotation')
-            box_col.prop(tmg_exp_vars, 'exp_reset_scale', text='Reset Scale')
+            box_col.prop(tmg_exp_vars, 'exp_reset_location', text='Location to World Origin')
+            box_col.prop(tmg_exp_vars, 'exp_apply_mesh', text='Visual Geometry to Mesh')
         
         box = col.box()
         row = box.row(align=True)
@@ -359,7 +344,6 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-
 
 
 
