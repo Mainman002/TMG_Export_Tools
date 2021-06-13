@@ -5,8 +5,11 @@ A Blender 2.9x addon for batch exporting FBX objects
 
 ### Preview Image
 ![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/01.png?raw=true)
+
 ![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/02.png?raw=true) 
-![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/03.png?raw=true) 
+
+![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/03.png?raw=true)
+
 ![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/04.png?raw=true) 
 
 ### Features include
