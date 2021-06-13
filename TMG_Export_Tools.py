@@ -276,6 +276,8 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
         
         if _check:
             row.operator('object.tmg_export', text='', icon='FOLDER_REDIRECT')
+        else:
+            row.label(text='', icon='FOLDER_REDIRECT')
         
         col = layout.column(align=True)
         row = col.row(align=True)
