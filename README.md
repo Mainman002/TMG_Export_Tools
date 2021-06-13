@@ -1,7 +1,7 @@
 # TMG_Export_Tools
 A Blender 2.9x addon for batch exporting FBX objects
 
-![v0.1.1 Alpha Release](https://github.com/Mainman002/TMG_Export_Tools/releases/tag/0.1.0)
+![v0.1.1 Alpha Release](https://github.com/Mainman002/TMG_Export_Tools/releases/tag/0.1.1)
 
 ### Features include
 * Selecting export path with blender's File Browser
