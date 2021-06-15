@@ -93,29 +93,35 @@ def _unwrap(_ob, _path):
     scene = bpy.context.scene
     tmg_exp_vars = scene.tmg_exp_vars
     
-    for _int in range(0,2):
-        if len(_ob.data.uv_layers)-1 < 1:
-            if tmg_exp_vars.exp_add_lightmap_uv:
-                bpy.ops.mesh.uv_texture_add()
-            
-            if tmg_exp_vars.exp_rename_uvs:
-                _ob.data.uv_layers[0].name = str(scene.tmg_exp_vars.exp_uvs_name + '_1')
-            
-        if len(_ob.data.uv_layers)-1 > 0:
-            if tmg_exp_vars.exp_rename_uvs:
-                _ob.data.uv_layers[0].name = str(scene.tmg_exp_vars.exp_uvs_name + '_1')
-                
-            _ob.data.uv_layers[1].active = True
-            
-            if tmg_exp_vars.exp_rename_uvs and tmg_exp_vars.exp_add_lightmap_uv:
-                _ob.data.uv_layers[1].name = str(scene.tmg_exp_vars.exp_uvs_name + '_2')
+    if len(_ob.data.uv_layers) < 1:
+        _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '0')
+        _ob.data.uv_layers.new(name=_name)
     
-    if tmg_exp_vars.exp_unwrap_lightmap_uv:
+    for _int in range(0,len(_ob.data.uv_layers)):
+        if tmg_exp_vars.exp_rename_uvs:
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '0')
+            _ob.data.uv_layers[0].name = str(_name)
+        
+        if tmg_exp_vars.exp_add_lightmap_uv and len(_ob.data.uv_layers) < 2:
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '%s') % str(_int+1)
+            _ob.data.uv_layers.new(name=_name)
+        
+        if tmg_exp_vars.exp_rename_uvs and len(_ob.data.uv_layers) > 1:
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '%s') % str(_int)
+            _ob.data.uv_layers[_int].name = str(_name)
+            
+        if len(_ob.data.uv_layers)-1 >= 1:
+            _ob.data.uv_layers[1].active = True
+    
+    if tmg_exp_vars.exp_unwrap_lightmap_uv and len(_ob.data.uv_layers) > 1:
         _mode_switch('EDIT')
         bpy.context.scene.tool_settings.use_uv_select_sync = True
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.uv.smart_project()
-    _pack(_ob, _path)
+        _pack(_ob, _path)
+    else:
+        _mode_switch('OBJECT')
+        _export(_ob, _path)
 
     return{'FINISHED'}
 
