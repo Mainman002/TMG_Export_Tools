@@ -27,7 +27,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_directory : bpy.props.StringProperty(name='Directory', description='Sets the folder directory path for the FBX models to export to')
     exp_use_selection : bpy.props.BoolProperty(default=True, description='If you want to export only selected or everything in your blend file (Might not work correctly)')
     exp_apply_unit_scale : bpy.props.BoolProperty(default=True, description='Takes into account current Blend Unit scale, else use FBX export scale')
-    exp_use_tspace : bpy.props.BoolProperty(default=False, description='Apply global space transforms to object rotations, else only axis space is written to FBX')
+    exp_use_tspace : bpy.props.BoolProperty(default=True, description='Apply global space transforms to object rotations, else only axis space is written to FBX')
     exp_embed_textures : bpy.props.BoolProperty(default=False, description='Inclued textures used in the materials')
     
     ## Object Transform Options
@@ -37,6 +37,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_reset_scale : bpy.props.BoolProperty(default=False, description='Sets Scale values to 0')
     
     ## UV Layer Options
+    exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel', description='First part of the UV layer name')
     exp_rename_uvs : bpy.props.BoolProperty(default=False, description='Sets UV layer names to UVChannel_1 and UVChannel_2')
     exp_add_lightmap_uv : bpy.props.BoolProperty(default=False, description='Adds a 2nd UV layer for use as Lightmaps')
     exp_unwrap_lightmap_uv : bpy.props.BoolProperty(default=False, description='Unwraps UV layer 2 !WARNING! will unwrap the 2nd UV layer')
@@ -54,10 +55,21 @@ def _ob_switch(_ob, _objs, _path):
     _ob.select_set(state=True)
     bpy.context.scene.cursor.location = _ob.location
     bpy.context.view_layer.objects.active = _ob
-    _reset_location(_ob, _path)
+    _apply_mesh(_ob, _path)
     for _obj in _objs:
         _obj.select_set(state=True)
     return{"Finished"}
+
+
+def _apply_mesh(_ob, _path):
+    scene = bpy.context.scene
+    tmg_exp_vars = scene.tmg_exp_vars
+    
+    if tmg_exp_vars.exp_apply_mesh:
+        bpy.ops.object.convert(target='MESH')
+    
+    _reset_location(_ob, _path)
+    return{'FINISHED'}
 
 
 def _reset_location(_ob, _path):
@@ -73,17 +85,6 @@ def _reset_location(_ob, _path):
     if scene.tmg_exp_vars.exp_reset_scale:
         bpy.context.active_object.scale = (1, 1, 1)
         
-    _apply_mesh(_ob, _path)
-    return{'FINISHED'}
-
-
-def _apply_mesh(_ob, _path):
-    scene = bpy.context.scene
-    tmg_exp_vars = scene.tmg_exp_vars
-    
-    if tmg_exp_vars.exp_apply_mesh:
-        bpy.ops.object.convert(target='MESH')
-    
     _unwrap(_ob, _path)
     return{'FINISHED'}
 
@@ -98,16 +99,16 @@ def _unwrap(_ob, _path):
                 bpy.ops.mesh.uv_texture_add()
             
             if tmg_exp_vars.exp_rename_uvs:
-                _ob.data.uv_layers[0].name = 'UVChannel_1'
+                _ob.data.uv_layers[0].name = str(scene.tmg_exp_vars.exp_uvs_name + '_1')
             
         if len(_ob.data.uv_layers)-1 > 0:
             if tmg_exp_vars.exp_rename_uvs:
-                _ob.data.uv_layers[0].name = 'UVChannel_1'
+                _ob.data.uv_layers[0].name = str(scene.tmg_exp_vars.exp_uvs_name + '_1')
                 
             _ob.data.uv_layers[1].active = True
             
-            if tmg_exp_vars.exp_rename_uvs:
-                _ob.data.uv_layers[1].name = 'UVChannel_2'
+            if tmg_exp_vars.exp_rename_uvs and tmg_exp_vars.exp_add_lightmap_uv:
+                _ob.data.uv_layers[1].name = str(scene.tmg_exp_vars.exp_uvs_name + '_2')
     
     if tmg_exp_vars.exp_unwrap_lightmap_uv:
         _mode_switch('EDIT')
@@ -192,7 +193,7 @@ def main(_directory):
 class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
     bl_idname = 'wm.object_tmg_reset_properties'
     bl_label = 'Reset Properties'
-    bl_description = 'Resets FBX properties to default values.'
+    bl_description = 'Resets FBX properties to default values'
     bl_options  = {'REGISTER', 'UNDO'}
         
     def execute(self, context):
@@ -201,13 +202,15 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
         
         scene.tmg_exp_vars.exp_use_selection = True
         scene.tmg_exp_vars.exp_apply_unit_scale = True
-        scene.tmg_exp_vars.exp_use_tspace = False
+        scene.tmg_exp_vars.exp_use_tspace = True
         scene.tmg_exp_vars.exp_embed_textures = False
         
         scene.tmg_exp_vars.exp_apply_mesh = False
         scene.tmg_exp_vars.exp_reset_location = True
         scene.tmg_exp_vars.exp_reset_rotation = False
         scene.tmg_exp_vars.exp_reset_scale = False
+        
+        scene.tmg_exp_vars.exp_uvs_name = 'UVChannel'
         scene.tmg_exp_vars.exp_rename_uvs = False
         scene.tmg_exp_vars.exp_add_lightmap_uv = False
         scene.tmg_exp_vars.exp_unwrap_lightmap_uv = False
@@ -216,7 +219,7 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
     
 
 class OBJECT_PT_TMG_Export(bpy.types.Operator):
-    """Export fbx models to folder directory path."""
+    """Export Mesh objects to folder directory path as individual FBX files"""
     bl_idname = "object.tmg_export"
     bl_label = "Export"
     bl_options  = {'REGISTER', 'UNDO'}
@@ -231,7 +234,7 @@ class OBJECT_PT_TMG_Export(bpy.types.Operator):
 
 
 class OBJECT_PT_TMG_Select_Directory(Operator, ImportHelper):
-    """Select folder directory path for exported fbx models."""
+    """Select folder directory path for exported fbx models"""
     bl_idname = "object.tmg_select_directory"
     bl_label = "Select Directory"
     bl_options  = {'REGISTER', 'UNDO'}
@@ -266,6 +269,7 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
         scene = context.scene
         tmg_exp_vars = scene.tmg_exp_vars
         _check = os.path.exists(scene.tmg_exp_vars.exp_directory)
+        selected_type = None
         
         layout = self.layout
         col = layout.column(align=True)
@@ -274,18 +278,17 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
         row.operator('wm.object_tmg_reset_properties', text='', icon='FILE_REFRESH')
         row.operator('object.tmg_select_directory', text='', icon='FILE_FOLDER')
         
-        if _check:
+        if _check and bpy.context.selected_objects:
             row.operator('object.tmg_export', text='', icon='FOLDER_REDIRECT')
         else:
             row.label(text='', icon='FOLDER_REDIRECT')
         
-        col = layout.column(align=True)
         row = col.row(align=True)
             
         row.prop(tmg_exp_vars, 'exp_directory', text='')
             
-        box = col.box()
-        row = box.row(align=True)
+        col = layout.column(align=True)
+        row = col.row(align=True)
         
         if scene.tmg_exp_vars.exp_fbx_category:
             row.prop(tmg_exp_vars, 'exp_fbx_category', text='', icon='DOWNARROW_HLT')
@@ -295,18 +298,21 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
         row.label(text='FBX Export Settings')
         
         if scene.tmg_exp_vars.exp_fbx_category:
+            box = col.box()
             box_col = box.column(align=True)
             
-            box_col.prop(tmg_exp_vars, 'exp_use_selection', text='Use Selection')
             box_col.prop(tmg_exp_vars, 'exp_apply_unit_scale', text='Apply Unit Scale')
             box_col.prop(tmg_exp_vars, 'exp_use_tspace', text='Use TSpace')
             box_col.prop(tmg_exp_vars, 'exp_embed_textures', text='Embed Textures')
             
+            box = col.box()
+            box_col = box.column(align=True)
+            
             box_col.prop(tmg_exp_vars, 'exp_reset_location', text='Location to World Origin')
             box_col.prop(tmg_exp_vars, 'exp_apply_mesh', text='Visual Geometry to Mesh')
         
-        box = col.box()
-        row = box.row(align=True)
+        col = layout.column(align=True)
+        row = col.row(align=True)
         
         if scene.tmg_exp_vars.exp_uv_category:
             row.prop(tmg_exp_vars, 'exp_uv_category', text='', icon='DOWNARROW_HLT')
@@ -316,9 +322,14 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
         row.label(text='UV Export Settings')
         
         if scene.tmg_exp_vars.exp_uv_category:
+            box = col.box()
             box_col = box.column(align=True)
             
             box_col.prop(tmg_exp_vars, 'exp_rename_uvs', text='Rename UV Layers')
+            
+            if scene.tmg_exp_vars.exp_rename_uvs:
+                box_col.prop(tmg_exp_vars, 'exp_uvs_name', text='')
+            
             box_col.prop(tmg_exp_vars, 'exp_add_lightmap_uv', text='Add Lightmap UV Layer')
             box_col.prop(tmg_exp_vars, 'exp_unwrap_lightmap_uv', text='Unwrap Lightmap UV Layer')
         
