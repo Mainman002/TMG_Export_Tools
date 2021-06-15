@@ -40,6 +40,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     ## UV Layer Options
     exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel_', description='First part of the UV layer name')
     exp_rename_uvs : bpy.props.BoolProperty(default=False, description='Sets UV layer names to UVChannel_1 and UVChannel_2')
+    exp_uvs_start_int : bpy.props.IntProperty(name='UV Start Index', default=1, min=0, soft_max=1, description='Integer value placed at the end of UV layer names')
     exp_add_lightmap_uv : bpy.props.BoolProperty(default=False, description='Adds a 2nd UV layer for use as Lightmaps')
     exp_unwrap_lightmap_uv : bpy.props.BoolProperty(default=False, description='Unwraps UV layer 2 !WARNING! will unwrap the 2nd UV layer')
 
@@ -95,20 +96,20 @@ def _unwrap(_ob, _path):
     tmg_exp_vars = scene.tmg_exp_vars
     
     if len(_ob.data.uv_layers) < 1:
-        _name = str(scene.tmg_exp_vars.exp_uvs_name + '0')
+        _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
         _ob.data.uv_layers.new(name=_name)
     
-    for _int in range(0,len(_ob.data.uv_layers)):
+    for _int in range(1,len(_ob.data.uv_layers)):
         if tmg_exp_vars.exp_rename_uvs:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '0')
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
             _ob.data.uv_layers[0].name = str(_name)
         
         if tmg_exp_vars.exp_add_lightmap_uv and len(_ob.data.uv_layers) < 2:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+1)
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+tmg_exp_vars.exp_uvs_start_int+1)
             _ob.data.uv_layers.new(name=_name)
         
         if tmg_exp_vars.exp_rename_uvs and len(_ob.data.uv_layers) > 1:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int)
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+tmg_exp_vars.exp_uvs_start_int)
             _ob.data.uv_layers[_int].name = str(_name)
             
         if len(_ob.data.uv_layers)-1 >= 1:
@@ -117,6 +118,7 @@ def _unwrap(_ob, _path):
     if tmg_exp_vars.exp_unwrap_lightmap_uv and len(_ob.data.uv_layers) > 1:
         _mode_switch('EDIT')
         bpy.context.scene.tool_settings.use_uv_select_sync = True
+        bpy.ops.mesh.reveal()
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.uv.smart_project()
         _pack(_ob, _path)
@@ -220,6 +222,7 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
         scene.tmg_exp_vars.exp_reset_scale = False
         
         scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
+        scene.tmg_exp_vars.exp_uvs_start_int = 1
         scene.tmg_exp_vars.exp_rename_uvs = False
         scene.tmg_exp_vars.exp_add_lightmap_uv = False
         scene.tmg_exp_vars.exp_unwrap_lightmap_uv = False
@@ -338,8 +341,13 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col.prop(tmg_exp_vars, 'exp_rename_uvs', text='Rename UV Layers')
             
             if scene.tmg_exp_vars.exp_rename_uvs:
-                box_col.prop(tmg_exp_vars, 'exp_uvs_name', text='')
-            
+#                row = box_col.split(factor=0.8, align=True)
+
+                row = box_col.row(align=True)
+                col = row.split(factor=0.8, align=True)
+                col.prop(tmg_exp_vars, 'exp_uvs_name', text='')
+                col.prop(tmg_exp_vars, 'exp_uvs_start_int', text='')
+                
             box_col.prop(tmg_exp_vars, 'exp_add_lightmap_uv', text='Add Lightmap UV Layer')
             box_col.prop(tmg_exp_vars, 'exp_unwrap_lightmap_uv', text='Unwrap Lightmap UV Layer')
         
