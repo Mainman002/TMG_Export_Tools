@@ -29,6 +29,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_apply_unit_scale : bpy.props.BoolProperty(default=True, description='Takes into account current Blend Unit scale, else use FBX export scale')
     exp_use_tspace : bpy.props.BoolProperty(default=True, description='Apply global space transforms to object rotations, else only axis space is written to FBX')
     exp_embed_textures : bpy.props.BoolProperty(default=False, description='Inclued textures used in the materials')
+    exp_use_mesh_modifiers : bpy.props.BoolProperty(default=True, description='Apply modifiers to mesh objects !WARNING! prevents exporting shape keys')
     
     ## Object Transform Options
     exp_apply_mesh : bpy.props.BoolProperty(default=False, description='Converts object to Mesh applying everything !WARNING! will apply all modifiers')
@@ -37,7 +38,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_reset_scale : bpy.props.BoolProperty(default=False, description='Sets Scale values to 0')
     
     ## UV Layer Options
-    exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel', description='First part of the UV layer name')
+    exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel_', description='First part of the UV layer name')
     exp_rename_uvs : bpy.props.BoolProperty(default=False, description='Sets UV layer names to UVChannel_1 and UVChannel_2')
     exp_add_lightmap_uv : bpy.props.BoolProperty(default=False, description='Adds a 2nd UV layer for use as Lightmaps')
     exp_unwrap_lightmap_uv : bpy.props.BoolProperty(default=False, description='Unwraps UV layer 2 !WARNING! will unwrap the 2nd UV layer')
@@ -94,20 +95,20 @@ def _unwrap(_ob, _path):
     tmg_exp_vars = scene.tmg_exp_vars
     
     if len(_ob.data.uv_layers) < 1:
-        _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '0')
+        _name = str(scene.tmg_exp_vars.exp_uvs_name + '0')
         _ob.data.uv_layers.new(name=_name)
     
     for _int in range(0,len(_ob.data.uv_layers)):
         if tmg_exp_vars.exp_rename_uvs:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '0')
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '0')
             _ob.data.uv_layers[0].name = str(_name)
         
         if tmg_exp_vars.exp_add_lightmap_uv and len(_ob.data.uv_layers) < 2:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '%s') % str(_int+1)
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+1)
             _ob.data.uv_layers.new(name=_name)
         
         if tmg_exp_vars.exp_rename_uvs and len(_ob.data.uv_layers) > 1:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '_' + '%s') % str(_int)
+            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int)
             _ob.data.uv_layers[_int].name = str(_name)
             
         if len(_ob.data.uv_layers)-1 >= 1:
@@ -155,6 +156,7 @@ def _export(_ob, _path):
     mesh_smooth_type='EDGE', 
     use_tspace=scene.tmg_exp_vars.exp_use_tspace, 
     embed_textures=scene.tmg_exp_vars.exp_embed_textures,
+    use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,
     )
     
     _ob_location_reset(_ob)
@@ -209,6 +211,7 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
         scene.tmg_exp_vars.exp_use_selection = True
         scene.tmg_exp_vars.exp_apply_unit_scale = True
         scene.tmg_exp_vars.exp_use_tspace = True
+        scene.tmg_exp_vars.exp_use_mesh_modifiers = True
         scene.tmg_exp_vars.exp_embed_textures = False
         
         scene.tmg_exp_vars.exp_apply_mesh = False
@@ -216,7 +219,7 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
         scene.tmg_exp_vars.exp_reset_rotation = False
         scene.tmg_exp_vars.exp_reset_scale = False
         
-        scene.tmg_exp_vars.exp_uvs_name = 'UVChannel'
+        scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
         scene.tmg_exp_vars.exp_rename_uvs = False
         scene.tmg_exp_vars.exp_add_lightmap_uv = False
         scene.tmg_exp_vars.exp_unwrap_lightmap_uv = False
@@ -307,8 +310,9 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box = col.box()
             box_col = box.column(align=True)
             
-            box_col.prop(tmg_exp_vars, 'exp_apply_unit_scale', text='Apply Unit Scale')
-            box_col.prop(tmg_exp_vars, 'exp_use_tspace', text='Use TSpace')
+            box_col.prop(tmg_exp_vars, 'exp_apply_unit_scale', text='Apply Unit')
+            box_col.prop(tmg_exp_vars, 'exp_use_tspace', text='Use Space Transform')
+            box_col.prop(tmg_exp_vars, 'exp_use_mesh_modifiers', text='Apply Modifiers')
             box_col.prop(tmg_exp_vars, 'exp_embed_textures', text='Embed Textures')
             
             box = col.box()
