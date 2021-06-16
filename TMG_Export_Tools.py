@@ -29,7 +29,7 @@ def _change_export_presets(self, context):
             scene.tmg_exp_vars.exp_uvs_start_int = 1
         
         if tmg_exp_vars.exp_pref_presets == 'Godot':
-            scene.tmg_exp_vars.exp_uvs_name = 'UV'
+            scene.tmg_exp_vars.exp_uvs_name = 'UV_'
             scene.tmg_exp_vars.exp_uvs_start_int = 1
         
         return {'FINISHED'}
@@ -65,17 +65,25 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     ## UV Layer Options
     exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel_', description='First part of the UV layer name')
     exp_rename_uvs : bpy.props.BoolProperty(default=False, description='Sets UV layer names to UVChannel_1 and UVChannel_2')
-    exp_uvs_start_int : bpy.props.IntProperty(name='UV Start Index', default=1, min=0, soft_max=1, description='Integer value placed at the end of UV layer names')
+    exp_uvs_start_int : bpy.props.IntProperty(name='UV Start Index', default=1, min=0, soft_max=1, step=1, description='Integer value placed at the end of UV layer names')
     exp_add_lightmap_uv : bpy.props.BoolProperty(default=False, description='Adds a 2nd UV layer for use as Lightmaps')
     exp_unwrap_lightmap_uv : bpy.props.BoolProperty(default=False, description='Unwraps UV layer 2 !WARNING! will unwrap the 2nd UV layer')
-    exp_lightmap_res : bpy.props.EnumProperty(name='Lightmap Resolution', default='128', description='Lightmap texture resolution to pack UVs in',
+    
+    exp_unwrap_method : bpy.props.EnumProperty(name='Unwrap Method', default='0', description='Method used when unwrapping lightmaps',
     items=[
-    ('64', '64', ''),
-    ('128', '128', ''),
-    ('196', '196', ''),
-    ('256', '256', ''),
-    ('512', '512', ''),
-    ('1024', '1024', '')])
+    ('0', 'Smart UV Project', 'Uses Smart UV Project (Recomended if Lightmap method failes)'),
+    ('1', 'Lightmap Pack', 'Uses Lightmap Pack (Good for basic meshes, more complex meshes may fail)')])
+    
+    exp_UVpack_margin : bpy.props.FloatProperty(name='UVpack Margin', default=0.005, soft_min=0.001, soft_max=0.1, step=0.001, precision=3, description='Space around UV islands when packing UVs')
+    
+#    exp_lightmap_res : bpy.props.EnumProperty(name='Lightmap Resolution', default='128', description='Lightmap texture resolution to pack UVs in',
+#    items=[
+#    ('64', '64', ''),
+#    ('128', '128', ''),
+#    ('196', '196', ''),
+#    ('256', '256', ''),
+#    ('512', '512', ''),
+#    ('1024', '1024', '')])
 
 
 def _mode_switch(_mode):
@@ -153,16 +161,19 @@ def _unwrap(_ob, _path):
         bpy.context.scene.tool_settings.use_uv_select_sync = True
         bpy.ops.mesh.reveal()
         bpy.ops.mesh.select_all(action='SELECT')
-#        bpy.ops.uv.smart_project()
-
-        bpy.ops.uv.lightmap_pack(
-        PREF_CONTEXT='SEL_FACES', 
-        PREF_PACK_IN_ONE=True, 
-        PREF_NEW_UVLAYER=False, 
-        PREF_APPLY_IMAGE=False, 
-        PREF_IMG_PX_SIZE=256, 
-        PREF_BOX_DIV=24, 
-        PREF_MARGIN_DIV=1.0)
+        
+        if tmg_exp_vars.exp_unwrap_method == '0':
+            bpy.ops.uv.smart_project()
+            
+        if tmg_exp_vars.exp_unwrap_method == '1':
+            bpy.ops.uv.lightmap_pack(
+            PREF_CONTEXT='SEL_FACES', 
+            PREF_PACK_IN_ONE=True, 
+            PREF_NEW_UVLAYER=False, 
+            PREF_APPLY_IMAGE=False, 
+            PREF_IMG_PX_SIZE=256, 
+            PREF_BOX_DIV=24, 
+            PREF_MARGIN_DIV=1.0)
         
         _pack(_ob, _path)
     else:
@@ -176,8 +187,8 @@ def _pack(_ob, _path):
     scene = bpy.context.scene
     tmg_exp_vars = scene.tmg_exp_vars
     
-#    if tmg_exp_vars.exp_unwrap_lightmap_uv:
-#        bpy.ops.uv.pack_islands(margin=0.03)
+    if tmg_exp_vars.exp_unwrap_lightmap_uv:
+        bpy.ops.uv.pack_islands(margin=tmg_exp_vars.exp_UVpack_margin)
         
     _mode_switch('OBJECT')
     _export(_ob, _path)
@@ -273,13 +284,16 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
             scene.tmg_exp_vars.exp_uvs_start_int = 1
         
         if tmg_exp_vars.exp_pref_presets == 'Godot':
-            scene.tmg_exp_vars.exp_uvs_name = 'UV'
+            scene.tmg_exp_vars.exp_uvs_name = 'UV_'
             scene.tmg_exp_vars.exp_uvs_start_int = 1
             
         scene.tmg_exp_vars.exp_rename_uvs = False
         scene.tmg_exp_vars.exp_add_lightmap_uv = False
         scene.tmg_exp_vars.exp_unwrap_lightmap_uv = False
-        scene.tmg_exp_vars.exp_lightmap_res = '128'
+#        scene.tmg_exp_vars.exp_lightmap_res = '128'
+        
+        scene.tmg_exp_vars.exp_unwrap_method = '0'
+        scene.tmg_exp_vars.exp_UVpack_margin = 0.005
         
         return {'FINISHED'}
     
@@ -287,7 +301,7 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
 class OBJECT_PT_TMG_Export(bpy.types.Operator):
     """Export Mesh objects to folder directory path as individual FBX files"""
     bl_idname = "object.tmg_export"
-    bl_label = "Export"
+    bl_label = "Export Batch (.fbx)"
     bl_options  = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
@@ -405,7 +419,9 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col.prop(tmg_exp_vars, 'exp_add_lightmap_uv', text='Add Lightmap UV Layer')
             box_col.prop(tmg_exp_vars, 'exp_unwrap_lightmap_uv', text='Unwrap Lightmap UV Layer')
             
-#            if scene.tmg_exp_vars.exp_unwrap_lightmap_uv:
+            if scene.tmg_exp_vars.exp_unwrap_lightmap_uv:
+                box_col.prop(tmg_exp_vars, 'exp_unwrap_method', text='')
+                box_col.prop(tmg_exp_vars, 'exp_UVpack_margin', text='UV Margin')
 #                row = box_col.row(align=True)
 #                col = row.split(factor=0.5, align=True)
 #                col.label(text='Lightmap Resolution:')
@@ -417,7 +433,6 @@ classes = (
     OBJECT_PT_TMG_Export_Panel,
     OBJECT_PT_TMG_Select_Directory,
     OBJECT_OT_TMG_Reset_Properties,
-#    OBJECT_OT_TMG_Change_Preset,
     OBJECT_PT_TMG_Export,
 )
 
@@ -431,7 +446,6 @@ def register():
 def unregister():
     for rsclass in classes:
         bpy.utils.unregister_class(rsclass)
-#        del bpy.types.Scene.tmg_exp_vars
 
 
 if __name__ == "__main__":
