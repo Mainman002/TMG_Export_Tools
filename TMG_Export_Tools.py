@@ -9,12 +9,31 @@ bl_info = {
     "author": "Johnathan Mueller",
     "descrtion": "A panel to batch export selected objects to .fbx",
     "blender": (2, 80, 0),
-    "version": (0, 1, 2),
+    "version": (0, 1, 3),
     "location": "View3D (ObjectMode) > Sidebar > TMG_Export Tab",
     "warning": "",
     "category": "Object"
 }
 
+
+def _change_export_presets(self, context):
+        scene = context.scene
+        tmg_exp_vars = scene.tmg_exp_vars
+        
+        if tmg_exp_vars.exp_pref_presets == 'UE4':
+            scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
+            scene.tmg_exp_vars.exp_uvs_start_int = 1
+        
+        if tmg_exp_vars.exp_pref_presets == 'Unity':
+            scene.tmg_exp_vars.exp_uvs_name = 'UV'
+            scene.tmg_exp_vars.exp_uvs_start_int = 1
+        
+        if tmg_exp_vars.exp_pref_presets == 'Godot':
+            scene.tmg_exp_vars.exp_uvs_name = 'UV'
+            scene.tmg_exp_vars.exp_uvs_start_int = 1
+        
+        return {'FINISHED'}
+    
 
 class TMG_Export_Properties(bpy.types.PropertyGroup):
     
@@ -22,6 +41,12 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_fbx_category : bpy.props.BoolProperty(default=False)
     exp_object_category : bpy.props.BoolProperty(default=False)
     exp_uv_category : bpy.props.BoolProperty(default=False)
+    
+    exp_pref_presets : bpy.props.EnumProperty(name='Lightmap Resolution', default='UE4', description='Lightmap texture resolution to pack UVs in',
+    items=[
+    ('UE4', 'UE4', ''),
+    ('Unity', 'Unity', ''),
+    ('Godot', 'Godot', '')], update=_change_export_presets)
     
     ## Default FBX Export Options
     exp_directory : bpy.props.StringProperty(name='Directory', description='Sets the folder directory path for the FBX models to export to')
@@ -43,6 +68,14 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_uvs_start_int : bpy.props.IntProperty(name='UV Start Index', default=1, min=0, soft_max=1, description='Integer value placed at the end of UV layer names')
     exp_add_lightmap_uv : bpy.props.BoolProperty(default=False, description='Adds a 2nd UV layer for use as Lightmaps')
     exp_unwrap_lightmap_uv : bpy.props.BoolProperty(default=False, description='Unwraps UV layer 2 !WARNING! will unwrap the 2nd UV layer')
+    exp_lightmap_res : bpy.props.EnumProperty(name='Lightmap Resolution', default='128', description='Lightmap texture resolution to pack UVs in',
+    items=[
+    ('64', '64', ''),
+    ('128', '128', ''),
+    ('196', '196', ''),
+    ('256', '256', ''),
+    ('512', '512', ''),
+    ('1024', '1024', '')])
 
 
 def _mode_switch(_mode):
@@ -120,7 +153,17 @@ def _unwrap(_ob, _path):
         bpy.context.scene.tool_settings.use_uv_select_sync = True
         bpy.ops.mesh.reveal()
         bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.uv.smart_project()
+#        bpy.ops.uv.smart_project()
+
+        bpy.ops.uv.lightmap_pack(
+        PREF_CONTEXT='SEL_FACES', 
+        PREF_PACK_IN_ONE=True, 
+        PREF_NEW_UVLAYER=False, 
+        PREF_APPLY_IMAGE=False, 
+        PREF_IMG_PX_SIZE=256, 
+        PREF_BOX_DIV=24, 
+        PREF_MARGIN_DIV=1.0)
+        
         _pack(_ob, _path)
     else:
         _mode_switch('OBJECT')
@@ -133,8 +176,8 @@ def _pack(_ob, _path):
     scene = bpy.context.scene
     tmg_exp_vars = scene.tmg_exp_vars
     
-    if tmg_exp_vars.exp_unwrap_lightmap_uv:
-        bpy.ops.uv.pack_islands(margin=0.03)
+#    if tmg_exp_vars.exp_unwrap_lightmap_uv:
+#        bpy.ops.uv.pack_islands(margin=0.03)
         
     _mode_switch('OBJECT')
     _export(_ob, _path)
@@ -221,11 +264,22 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
         scene.tmg_exp_vars.exp_reset_rotation = False
         scene.tmg_exp_vars.exp_reset_scale = False
         
-        scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
-        scene.tmg_exp_vars.exp_uvs_start_int = 1
+        if tmg_exp_vars.exp_pref_presets == 'UE4':
+            scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
+            scene.tmg_exp_vars.exp_uvs_start_int = 1
+        
+        if tmg_exp_vars.exp_pref_presets == 'Unity':
+            scene.tmg_exp_vars.exp_uvs_name = 'UV'
+            scene.tmg_exp_vars.exp_uvs_start_int = 1
+        
+        if tmg_exp_vars.exp_pref_presets == 'Godot':
+            scene.tmg_exp_vars.exp_uvs_name = 'UV'
+            scene.tmg_exp_vars.exp_uvs_start_int = 1
+            
         scene.tmg_exp_vars.exp_rename_uvs = False
         scene.tmg_exp_vars.exp_add_lightmap_uv = False
         scene.tmg_exp_vars.exp_unwrap_lightmap_uv = False
+        scene.tmg_exp_vars.exp_lightmap_res = '128'
         
         return {'FINISHED'}
     
@@ -294,6 +348,8 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             row.operator('object.tmg_export', text='', icon='FOLDER_REDIRECT')
         else:
             row.label(text='', icon='FOLDER_REDIRECT')
+            
+        row.prop(tmg_exp_vars, 'exp_pref_presets', text='')
         
         row = col.row(align=True)
             
@@ -341,8 +397,6 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col.prop(tmg_exp_vars, 'exp_rename_uvs', text='Rename UV Layers')
             
             if scene.tmg_exp_vars.exp_rename_uvs:
-#                row = box_col.split(factor=0.8, align=True)
-
                 row = box_col.row(align=True)
                 col = row.split(factor=0.8, align=True)
                 col.prop(tmg_exp_vars, 'exp_uvs_name', text='')
@@ -350,6 +404,12 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
                 
             box_col.prop(tmg_exp_vars, 'exp_add_lightmap_uv', text='Add Lightmap UV Layer')
             box_col.prop(tmg_exp_vars, 'exp_unwrap_lightmap_uv', text='Unwrap Lightmap UV Layer')
+            
+#            if scene.tmg_exp_vars.exp_unwrap_lightmap_uv:
+#                row = box_col.row(align=True)
+#                col = row.split(factor=0.5, align=True)
+#                col.label(text='Lightmap Resolution:')
+#                col.prop(tmg_exp_vars, 'exp_lightmap_res', text='')
         
 
 classes = (
@@ -357,6 +417,7 @@ classes = (
     OBJECT_PT_TMG_Export_Panel,
     OBJECT_PT_TMG_Select_Directory,
     OBJECT_OT_TMG_Reset_Properties,
+#    OBJECT_OT_TMG_Change_Preset,
     OBJECT_PT_TMG_Export,
 )
 
