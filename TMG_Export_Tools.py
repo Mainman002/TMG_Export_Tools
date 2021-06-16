@@ -99,7 +99,7 @@ def _unwrap(_ob, _path):
         _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
         _ob.data.uv_layers.new(name=_name)
     
-    for _int in range(1,len(_ob.data.uv_layers)):
+    for _int in range(0,len(_ob.data.uv_layers)):
         if tmg_exp_vars.exp_rename_uvs:
             _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
             _ob.data.uv_layers[0].name = str(_name)
