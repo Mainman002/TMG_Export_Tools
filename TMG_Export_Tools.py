@@ -122,6 +122,15 @@ def _cursor_to_obj(ob=None):
     return{'FINISHED'}
 
 
+def _apply_mesh(_ob=None):
+    scene = bpy.context.scene
+    tmg_exp_vars = scene.tmg_exp_vars
+    
+    if _ob:
+        bpy.ops.object.convert(target='MESH')
+    return{'FINISHED'}
+
+
 def _center_obj(ob=None):
     if ob:
         ob.location = (0, 0, 0)
@@ -229,6 +238,11 @@ def main(_directory):
     
     if _obs:
         for obj in _obs:
+            if obj.type == 'MESH':
+                _ob_group_switch(obj)
+                if tmg_exp_vars.exp_apply_mesh:
+                    _apply_mesh(obj)
+            
             if not obj.parent:
                 _parents.append(obj)
                 
