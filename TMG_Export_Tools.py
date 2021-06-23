@@ -9,7 +9,7 @@ bl_info = {
     "author": "Johnathan Mueller",
     "descrtion": "A panel to batch export selected objects to .fbx",
     "blender": (2, 80, 0),
-    "version": (0, 1, 3),
+    "version": (0, 1, 4),
     "location": "View3D (ObjectMode) > Sidebar > TMG_Export Tab",
     "warning": "",
     "category": "Object"
@@ -64,6 +64,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     
     ## UV Layer Options
     exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel_', description='First part of the UV layer name')
+    exp_pack_single_lightmap_uv : bpy.props.BoolProperty(default=False, description='Pack UV layer 2 to single UV area !WARNING! will unwrap the 2nd UV layer')
     exp_rename_uvs : bpy.props.BoolProperty(default=False, description='Sets UV layer names to UVChannel_1 and UVChannel_2')
     exp_uvs_start_int : bpy.props.IntProperty(name='UV Start Index', default=1, min=0, soft_max=1, step=1, description='Integer value placed at the end of UV layer names')
     exp_add_lightmap_uv : bpy.props.BoolProperty(default=False, description='Adds a 2nd UV layer for use as Lightmaps')
@@ -87,118 +88,101 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
 
 
 def _mode_switch(_mode):
-    bpy.ops.object.mode_set(mode=_mode)
+    if bpy.context.active_object:
+        bpy.ops.object.mode_set(mode=_mode)
     return{"Finished"}
 
 
-def _ob_switch(_ob, _objs, _path):
+def _objs_loop(objs=None):
+    return objs
+    return{'FINISHED'}
+
+
+def _parent_loop(_parents=None):
+    return _parents
+    return{'FINISHED'}
+
+
+def _ob_group_switch(ob):
+#    if ob.type == 'MESH':
     _mode_switch('OBJECT')
-    for _obj in bpy.context.selected_objects:
-        _obj.select_set(state=False)
-    _ob.select_set(state=True)
-    bpy.context.scene.cursor.location = _ob.location
-    bpy.context.view_layer.objects.active = _ob
-    _apply_mesh(_ob, _path)
-    for _obj in _objs:
-        _obj.select_set(state=True)
-    return{"Finished"}
-
-
-def _apply_mesh(_ob, _path):
-    scene = bpy.context.scene
-    tmg_exp_vars = scene.tmg_exp_vars
-    
-    if tmg_exp_vars.exp_apply_mesh:
-        bpy.ops.object.convert(target='MESH')
-    
-    _reset_location(_ob, _path)
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
+#    if ob.type == 'MESH':
+    ob.select_set(state=True)
+    bpy.context.view_layer.objects.active = ob
+    return ob
     return{'FINISHED'}
 
 
-def _reset_location(_ob, _path):
+def _cursor_to_obj(ob=None):
+    if ob:
+        bpy.context.scene.cursor.location = ob.location
+    return{'FINISHED'}
+
+
+def _center_obj(ob=None):
+    if ob:
+        ob.location = (0, 0, 0)
+    return{'FINISHED'}
+
+
+def _unwrap(_ob):
     scene = bpy.context.scene
     tmg_exp_vars = scene.tmg_exp_vars
     
-    if scene.tmg_exp_vars.exp_reset_location:
-        bpy.context.active_object.location = (0, 0, 0)
-    
-    if scene.tmg_exp_vars.exp_reset_rotation:
-        bpy.context.active_object.rotation_euler = (0, 0, 0)
-    
-    if scene.tmg_exp_vars.exp_reset_scale:
-        bpy.context.active_object.scale = (1, 1, 1)
+    if _ob.type == 'MESH':
+        print('\nUnwrapping: ', _ob)
         
-    _unwrap(_ob, _path)
-    return{'FINISHED'}
-
-
-def _unwrap(_ob, _path):
-    scene = bpy.context.scene
-    tmg_exp_vars = scene.tmg_exp_vars
-    
-    if len(_ob.data.uv_layers) < 1:
-        _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
-        _ob.data.uv_layers.new(name=_name)
-    
-    for _int in range(0,len(_ob.data.uv_layers)):
-        if tmg_exp_vars.exp_rename_uvs:
+        if len(_ob.data.uv_layers) < 1:
             _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
-            _ob.data.uv_layers[0].name = str(_name)
-        
-        if tmg_exp_vars.exp_add_lightmap_uv and len(_ob.data.uv_layers) < 2:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+tmg_exp_vars.exp_uvs_start_int+1)
             _ob.data.uv_layers.new(name=_name)
         
-        if tmg_exp_vars.exp_rename_uvs and len(_ob.data.uv_layers) > 1:
-            _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+tmg_exp_vars.exp_uvs_start_int)
-            _ob.data.uv_layers[_int].name = str(_name)
+        for _int in range(0,len(_ob.data.uv_layers)):
+            if tmg_exp_vars.exp_rename_uvs:
+                _name = str(scene.tmg_exp_vars.exp_uvs_name + str(tmg_exp_vars.exp_uvs_start_int))
+                _ob.data.uv_layers[0].name = str(_name)
             
-        if len(_ob.data.uv_layers)-1 >= 1:
-            _ob.data.uv_layers[1].active = True
-    
-    if tmg_exp_vars.exp_unwrap_lightmap_uv and len(_ob.data.uv_layers) > 1:
-        _mode_switch('EDIT')
-        bpy.context.scene.tool_settings.use_uv_select_sync = True
-        bpy.ops.mesh.reveal()
-        bpy.ops.mesh.select_all(action='SELECT')
-        
-        if tmg_exp_vars.exp_unwrap_method == '0':
-            bpy.ops.uv.smart_project()
+            if tmg_exp_vars.exp_add_lightmap_uv and len(_ob.data.uv_layers) < 2:
+                _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+tmg_exp_vars.exp_uvs_start_int+1)
+                _ob.data.uv_layers.new(name=_name)
             
-        if tmg_exp_vars.exp_unwrap_method == '1':
-            bpy.ops.uv.lightmap_pack(
-            PREF_CONTEXT='SEL_FACES', 
-            PREF_PACK_IN_ONE=True, 
-            PREF_NEW_UVLAYER=False, 
-            PREF_APPLY_IMAGE=False, 
-            PREF_IMG_PX_SIZE=256, 
-            PREF_BOX_DIV=24, 
-            PREF_MARGIN_DIV=1.0)
+            if tmg_exp_vars.exp_rename_uvs and len(_ob.data.uv_layers) > 1:
+                _name = str(scene.tmg_exp_vars.exp_uvs_name + '%s') % str(_int+tmg_exp_vars.exp_uvs_start_int)
+                _ob.data.uv_layers[_int].name = str(_name)
+                
+            if len(_ob.data.uv_layers)-1 >= 1:
+                _ob.data.uv_layers[1].active = True
         
-        _pack(_ob, _path)
-    else:
-        _mode_switch('OBJECT')
-        _export(_ob, _path)
-
+        if tmg_exp_vars.exp_unwrap_lightmap_uv and len(_ob.data.uv_layers) > 1:
+            _mode_switch('EDIT')
+            bpy.context.scene.tool_settings.use_uv_select_sync = True
+            bpy.ops.mesh.reveal()
+            bpy.ops.mesh.select_all(action='SELECT')
+            
+            if tmg_exp_vars.exp_unwrap_method == '0':
+                bpy.ops.uv.smart_project()
+                
+            if tmg_exp_vars.exp_unwrap_method == '1':
+                bpy.ops.uv.lightmap_pack(
+                PREF_CONTEXT='SEL_FACES', 
+                PREF_PACK_IN_ONE=True, 
+                PREF_NEW_UVLAYER=False, 
+                PREF_APPLY_IMAGE=False, 
+                PREF_IMG_PX_SIZE=256, 
+                PREF_BOX_DIV=24, 
+                PREF_MARGIN_DIV=1.0)
+            
+            if tmg_exp_vars.exp_unwrap_lightmap_uv:
+                bpy.ops.uv.pack_islands(margin=tmg_exp_vars.exp_UVpack_margin)
     return{'FINISHED'}
 
 
-def _pack(_ob, _path):
+def _export(_name, _path):
     scene = bpy.context.scene
     tmg_exp_vars = scene.tmg_exp_vars
-    
-    if tmg_exp_vars.exp_unwrap_lightmap_uv:
-        bpy.ops.uv.pack_islands(margin=tmg_exp_vars.exp_UVpack_margin)
-        
-    _mode_switch('OBJECT')
-    _export(_ob, _path)
-    return{'FINISHED'}
-
-
-def _export(_ob, _path):
-    scene = bpy.context.scene
-    tmg_exp_vars = scene.tmg_exp_vars
-    _new_path = str(_path + _ob.name + '.fbx')
+    _new_path = str(_path + _name + '.fbx')
     
     bpy.ops.export_scene.fbx(
     filepath=_new_path, 
@@ -206,7 +190,7 @@ def _export(_ob, _path):
     use_selection=scene.tmg_exp_vars.exp_use_selection, 
     apply_unit_scale=scene.tmg_exp_vars.exp_apply_unit_scale, 
     apply_scale_options='FBX_SCALE_NONE', 
-    object_types={'ARMATURE', 'EMPTY', 'MESH', 'OTHER'}, 
+    object_types={'ARMATURE', 'EMPTY', 'MESH', 'CAMERA', 'LIGHT'}, 
     axis_forward='-Z', 
     axis_up='Y', 
     mesh_smooth_type='EDGE', 
@@ -214,24 +198,20 @@ def _export(_ob, _path):
     embed_textures=scene.tmg_exp_vars.exp_embed_textures,
     use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,
     )
-    
-    _ob_location_reset(_ob)
     return{'FINISHED'}
 
 
-def _ob_location_reset(_ob):
-    bpy.context.active_object.location = bpy.context.scene.cursor.location
-    return{'FINISHED'}
-
-
-def _loop(_objs, _path):
-    for _int in range(0, len(_objs)):
-        _ob_switch(_objs[_int], _objs, _path)
+def _obj_reset(ob=None):
+    if ob:
+        ob.location = bpy.context.scene.cursor.location
     return{'FINISHED'}
 
 
 def main(_directory):
-    print('\nSTART EXPORT TO')
+    print('\nSTART: ')
+    
+    scene = bpy.context.scene
+    tmg_exp_vars = scene.tmg_exp_vars
     
     _check = os.path.exists(_directory)
     
@@ -239,18 +219,72 @@ def main(_directory):
         os.mkdir(path=_directory)
     
     _path = _directory
-    print(str('Directory: ' + _path))
+    print(str('Directory: ' + _path + '\n'))
     
-    for _obj in bpy.context.selected_objects:
-        if _obj.type != 'MESH':
-            _obj.select_set(state=False)
+    _mode_switch('OBJECT')
     
-    _objs = bpy.context.selected_objects
+    _obs = _objs_loop(bpy.context.selected_objects)
+    _parents = []
+    temp_list = []
     
-    _loop(_objs, _path)
-    
-    print("\nFINISHED EXPORT TO")
-    print(str('Directory: ' + _path))
+    if _obs:
+        for obj in _obs:
+            if not obj.parent:
+                _parents.append(obj)
+                
+        for obj in _parents:
+            if tmg_exp_vars.exp_reset_location:
+                print('\nCursor To: ', obj.name)
+                _cursor_to_obj(obj)
+                
+                print('\nTo Center: ', obj.name)
+                _center_obj(obj)
+            
+            if tmg_exp_vars.exp_pack_single_lightmap_uv:
+                obj = _ob_group_switch(obj)
+                if obj.type != 'MESH':
+                    print('\nSKIPPING UNWRAP: ', obj.name)
+                    obj.select_set(state=False)
+                    bpy.context.view_layer.objects.active = None
+                    if len(bpy.context.selected_objects) > 0:
+                        bpy.context.view_layer.objects.active = bpy.context.selected_objects[-1]
+                        bpy.context.active_object.select_set(state=True)
+                    
+                for ob in bpy.context.selected_objects:
+                    _unwrap(ob)
+            else:
+                _ob_group_switch(obj)
+                for ob in bpy.context.selected_objects:
+                    if ob.type != 'MESH':
+                        print('\nSKIPPING UNWRAP: ', ob.name)
+                        ob.select_set(state=False)
+
+                if len(bpy.context.selected_objects) > 0:
+                    bpy.context.view_layer.objects.active = bpy.context.selected_objects[-1]
+                    bpy.context.active_object.select_set(state=True)
+                    temp_list = []
+                    temp_list = bpy.context.selected_objects
+                            
+            for ob in temp_list:
+                bpy.ops.object.select_all(action='DESELECT')
+                ob.select_set(state=True)
+                bpy.context.view_layer.objects.active = ob
+                _unwrap(ob)
+                _mode_switch('OBJECT')
+                
+            _mode_switch('OBJECT')
+            _ob_group_switch(obj)
+            print('\nOBJS: ', bpy.context.selected_objects)
+            _export(obj.name, _path)
+            
+            if tmg_exp_vars.exp_reset_location:
+                print('\nLocation Reset: ', obj.name)
+                _obj_reset(obj)
+            
+    else:
+        print('\nNo Objects')
+        
+    print(str('Directory: ' + _path + '\nFINISHED'))
     return{'FINISHED'}
 
 
@@ -292,6 +326,7 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
         scene.tmg_exp_vars.exp_unwrap_lightmap_uv = False
 #        scene.tmg_exp_vars.exp_lightmap_res = '128'
         
+        scene.tmg_exp_vars.exp_pack_single_lightmap_uv = False
         scene.tmg_exp_vars.exp_unwrap_method = '0'
         scene.tmg_exp_vars.exp_UVpack_margin = 0.005
         
@@ -348,6 +383,10 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
     def draw(self, context):
         scene = context.scene
         tmg_exp_vars = scene.tmg_exp_vars
+        
+        if scene.tmg_exp_vars.exp_directory == None:
+            scene.tmg_exp_vars.exp_directory = '//'
+            
         _check = os.path.exists(scene.tmg_exp_vars.exp_directory)
         selected_type = None
         
@@ -420,6 +459,7 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col.prop(tmg_exp_vars, 'exp_unwrap_lightmap_uv', text='Unwrap Lightmap UV Layer')
             
             if scene.tmg_exp_vars.exp_unwrap_lightmap_uv:
+                box_col.prop(tmg_exp_vars, 'exp_pack_single_lightmap_uv', text='Pack to Single UV')
                 box_col.prop(tmg_exp_vars, 'exp_unwrap_method', text='')
                 box_col.prop(tmg_exp_vars, 'exp_UVpack_margin', text='UV Margin')
 #                row = box_col.row(align=True)
