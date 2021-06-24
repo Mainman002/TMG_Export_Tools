@@ -31,7 +31,7 @@ def _change_export_presets(self, context):
             scene.tmg_exp_vars.exp_uvs_start_int = 1
         
         if tmg_exp_vars.exp_pref_presets == 'Godot':
-            tmg_exp_vars.exp_export_format = 'GLB'
+            tmg_exp_vars.exp_export_format = 'GLTF_EMBEDDED'
             scene.tmg_exp_vars.exp_uvs_name = 'UV_'
             scene.tmg_exp_vars.exp_uvs_start_int = 1
         
