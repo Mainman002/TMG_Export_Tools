@@ -1,4 +1,4 @@
-import bpy, sys, os
+import bpy, sys, os, platform
 from bpy_extras.io_utils import ImportHelper
 from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty, FloatProperty
 from bpy.types import Operator
@@ -191,14 +191,23 @@ def _export(_col_name, _name, _path):
     tmg_exp_vars = scene.tmg_exp_vars
     _new_path = None
 
+    if platform.system() != "Windows":
+        _slash = "/"
+    else:
+        _slash = str( "\\" )
+
+    print( platform.system() )
+
     if tmg_exp_vars.exp_export_format == 'fbx':
         if tmg_exp_vars.use_collection_name and _col_name:
 
-            if not os.path.exists( str( _path + _col_name + "/" ) ):
-                os.mkdir( str( _path + _col_name + "/" ) )
-                _new_path = str( _path + _col_name + "/" + _name + '.' + tmg_exp_vars.exp_export_format )
+            
+
+            if not os.path.exists( str( _path + _col_name + _slash ) ):
+                os.mkdir( str( _path + _col_name + _slash ) )
+                _new_path = str( _path + _col_name + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
             else:
-                _new_path = str( _path + _col_name + "/" + _name + '.' + tmg_exp_vars.exp_export_format )
+                _new_path = str( _path + _col_name + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
         else:
             _new_path = str( _path + _name + '.' + tmg_exp_vars.exp_export_format )
 
@@ -218,11 +227,11 @@ def _export(_col_name, _name, _path):
         
     elif tmg_exp_vars.exp_export_format == 'GLB' or tmg_exp_vars.exp_export_format == 'GLTF_EMBEDDED' or tmg_exp_vars.exp_export_format == 'GLTF_SEPARATE':
         if tmg_exp_vars.use_collection_name and _col_name:
-            if not os.path.exists( str( _path + _col_name + "/" ) ):
-                os.mkdir( str( _path + _col_name + "/" ) )
-                _new_path = str( _path + _col_name + "/" + _name )
+            if not os.path.exists( str( _path + _col_name + _slash ) ):
+                os.mkdir( str( _path + _col_name + _slash ) )
+                _new_path = str( _path + _col_name + _slash + _name )
             else:
-                _new_path = str( _path + _col_name + "/" + _name )
+                _new_path = str( _path + _col_name + _slash + _name )
         else:
             _new_path = str( _path + _name )
 
