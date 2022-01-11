@@ -4,18 +4,6 @@ from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty, F
 from bpy.types import Operator
 
 
-bl_info = {
-    "name": "TMG_Export_Tools",
-    "author": "Johnathan Mueller",
-    "descrtion": "A panel to batch export selected objects to .fbx",
-    "blender": (2, 80, 0),
-    "version": (0, 1, 5),
-    "location": "View3D (ObjectMode) > Sidebar > TMG_Export Tab",
-    "warning": "",
-    "category": "Object"
-}
-
-
 def _change_export_presets(self, context):
         scene = context.scene
         tmg_exp_vars = scene.tmg_exp_vars
@@ -44,6 +32,8 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_fbx_category : bpy.props.BoolProperty(default=False)
     exp_object_category : bpy.props.BoolProperty(default=False)
     exp_uv_category : bpy.props.BoolProperty(default=False)
+
+    use_collection_name : bpy.props.BoolProperty( name="Use Collection Name", default=True, description='Create folder using collection name' )
     
     exp_pref_presets : bpy.props.EnumProperty(name='Lightmap Resolution', default='UE4', description='Lightmap texture resolution to pack UVs in',
     items=[
@@ -196,13 +186,22 @@ def _unwrap(_ob):
     return{'FINISHED'}
 
 
-def _export(_name, _path):
+def _export(_col_name, _name, _path):
     scene = bpy.context.scene
     tmg_exp_vars = scene.tmg_exp_vars
     _new_path = None
-    
+
     if tmg_exp_vars.exp_export_format == 'fbx':
-        _new_path = str(_path + _name + '.' + tmg_exp_vars.exp_export_format)
+        if tmg_exp_vars.use_collection_name and _col_name:
+
+            if not os.path.exists( str( _path + _col_name + "/" ) ):
+                os.mkdir( str( _path + _col_name + "/" ) )
+                _new_path = str( _path + _col_name + "/" + _name + '.' + tmg_exp_vars.exp_export_format )
+            else:
+                _new_path = str( _path + _col_name + "/" + _name + '.' + tmg_exp_vars.exp_export_format )
+        else:
+            _new_path = str( _path + _name + '.' + tmg_exp_vars.exp_export_format )
+
         bpy.ops.export_scene.fbx(
         filepath=_new_path, 
         filter_glob='*.fbx', 
@@ -218,7 +217,15 @@ def _export(_name, _path):
         use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,)
         
     elif tmg_exp_vars.exp_export_format == 'GLB' or tmg_exp_vars.exp_export_format == 'GLTF_EMBEDDED' or tmg_exp_vars.exp_export_format == 'GLTF_SEPARATE':
-        _new_path = str(_path + _name)
+        if tmg_exp_vars.use_collection_name and _col_name:
+            if not os.path.exists( str( _path + _col_name + "/" ) ):
+                os.mkdir( str( _path + _col_name + "/" ) )
+                _new_path = str( _path + _col_name + "/" + _name )
+            else:
+                _new_path = str( _path + _col_name + "/" + _name )
+        else:
+            _new_path = str( _path + _name )
+
         bpy.ops.export_scene.gltf(filepath=_new_path,
 #        check_existing=False, 
         export_format=tmg_exp_vars.exp_export_format, 
@@ -349,7 +356,13 @@ def main(_directory):
             _mode_switch('OBJECT')
             _ob_group_switch(obj)
             print('\nOBJS: ', bpy.context.selected_objects)
-            _export(obj.name, _path)
+
+            col_name = None
+            
+            for collection in obj.users_collection:
+                col_name = collection.name
+
+            _export(col_name, obj.name, _path)
             
             if tmg_exp_vars.exp_reset_location:
                 print('\nLocation Reset: ', obj.name)
@@ -505,6 +518,7 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box = col.box()
             box_col = box.column(align=True)
             
+            box_col.prop(tmg_exp_vars, 'use_collection_name')
             box_col.prop(tmg_exp_vars, 'exp_reset_location', text='Location to World Origin')
             box_col.prop(tmg_exp_vars, 'exp_apply_mesh', text='Visual Geometry to Mesh')
         
@@ -543,27 +557,5 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
 #                col.prop(tmg_exp_vars, 'exp_lightmap_res', text='')
         
 
-classes = (
-    TMG_Export_Properties,
-    OBJECT_PT_TMG_Export_Panel,
-    OBJECT_PT_TMG_Select_Directory,
-    OBJECT_OT_TMG_Reset_Properties,
-    OBJECT_PT_TMG_Export,
-)
-
-
-def register():
-    for rsclass in classes:
-        bpy.utils.register_class(rsclass)
-        bpy.types.Scene.tmg_exp_vars = bpy.props.PointerProperty(type=TMG_Export_Properties)
-
-
-def unregister():
-    for rsclass in classes:
-        bpy.utils.unregister_class(rsclass)
-
-
-if __name__ == "__main__":
-    register()
 
 
