@@ -24,6 +24,4 @@ https://youtu.be/aSEHSHSX51k
 ### More features to come later as I work out a few things ;)
 
 ### Preview Image
-![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/01.png?raw=true)
-
-![alt text](https://github.com/Mainman002/TMG_Export_Tools/blob/main/Previews/02.png?raw=true) 
+![image](https://user-images.githubusercontent.com/11281480/148879485-95235d1c-0ee9-42d8-a162-219c4141c059.png)
