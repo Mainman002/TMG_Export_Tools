@@ -32,6 +32,7 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_fbx_category : bpy.props.BoolProperty(default=False)
     exp_object_category : bpy.props.BoolProperty(default=False)
     exp_uv_category : bpy.props.BoolProperty(default=False)
+    exp_leaf_bones : bpy.props.BoolProperty(default=False, description='Add bone to armature ends')
 
     use_collection_name : bpy.props.BoolProperty( name="Use Collection Name", default=True, description='Create folder using collection name' )
     
@@ -223,7 +224,8 @@ def _export(_col_name, _name, _path):
         mesh_smooth_type='EDGE', 
         use_tspace=scene.tmg_exp_vars.exp_use_tspace, 
         embed_textures=scene.tmg_exp_vars.exp_embed_textures,
-        use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,)
+        use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,
+        add_leaf_bones=scene.tmg_exp_vars.exp_leaf_bones)
         
     elif tmg_exp_vars.exp_export_format == 'GLB' or tmg_exp_vars.exp_export_format == 'GLTF_EMBEDDED' or tmg_exp_vars.exp_export_format == 'GLTF_SEPARATE':
         if tmg_exp_vars.use_collection_name and _col_name:
@@ -470,7 +472,7 @@ class OBJECT_PT_TMG_Select_Directory(Operator, ImportHelper):
 
 class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
     bl_idname = 'OBJECT_PT_tmg_export_panel'
-    bl_category = 'TMG Export'
+    bl_category = 'TMG'
     bl_label = 'FBX Export Tools'
     bl_context = "objectmode"
     bl_space_type = 'VIEW_3D'
@@ -523,6 +525,7 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col.prop(tmg_exp_vars, 'exp_use_tspace', text='Use Space Transform')
             box_col.prop(tmg_exp_vars, 'exp_use_mesh_modifiers', text='Apply Modifiers')
             box_col.prop(tmg_exp_vars, 'exp_embed_textures', text='Embed Textures')
+            box_col.prop(tmg_exp_vars, 'exp_leaf_bones', text='Leaf Bones')
             
             box = col.box()
             box_col = box.column(align=True)

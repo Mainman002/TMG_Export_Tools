@@ -14,7 +14,7 @@ bl_info = {
     "author": "Johnathan Mueller",
     "descrtion": "A panel to batch export selected objects to .fbx",
     "blender": (2, 80, 0),
-    "version": (0, 1, 6),
+    "version": (0, 1, 7),
     "location": "View3D (ObjectMode) > Sidebar > TMG_Export Tab",
     "warning": "",
     "category": "Object"
