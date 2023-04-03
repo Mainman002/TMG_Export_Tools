@@ -12,10 +12,10 @@ from . TMG_Export_Tools import *
 bl_info = {
     "name": "TMG_Export_Tools",
     "author": "Johnathan Mueller",
-    "descrtion": "A panel to batch export selected objects to .fbx",
-    "blender": (2, 80, 0),
-    "version": (0, 1, 7),
-    "location": "View3D (ObjectMode) > Sidebar > TMG_Export Tab",
+    "descrtion": "A panel to batch export selected objects to fbx, obj, and gltf",
+    "blender": (2, 5, 0),
+    "version": (0, 1, 8),
+    "location": "View3D (ObjectMode) > Sidebar > TMG > Export_Tools Tab",
     "warning": "",
     "category": "Object"
 }

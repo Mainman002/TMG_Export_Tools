@@ -5,38 +5,38 @@ from bpy.types import Operator
 
 
 def _change_export_presets(self, context):
-        scene = context.scene
-        tmg_exp_vars = scene.tmg_exp_vars
+    scene = context.scene
+    tmg_exp_vars = scene.tmg_exp_vars
+
+    if tmg_exp_vars.exp_pref_presets == 'UE4':
+        tmg_exp_vars.exp_export_format = 'fbx'
+        scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
+        scene.tmg_exp_vars.exp_uvs_start_int = 1
+
+    if tmg_exp_vars.exp_pref_presets == 'Unity':
+        tmg_exp_vars.exp_export_format = 'fbx'
+        scene.tmg_exp_vars.exp_uvs_name = 'UV'
+        scene.tmg_exp_vars.exp_uvs_start_int = 1
+
+    if tmg_exp_vars.exp_pref_presets == 'Godot':
+        tmg_exp_vars.exp_export_format = 'gltf_embedded'
+        scene.tmg_exp_vars.exp_uvs_name = 'UV_'
+        scene.tmg_exp_vars.exp_uvs_start_int = 1
         
-        if tmg_exp_vars.exp_pref_presets == 'UE4':
-            tmg_exp_vars.exp_export_format = 'fbx'
-            scene.tmg_exp_vars.exp_uvs_name = 'UVChannel_'
-            scene.tmg_exp_vars.exp_uvs_start_int = 1
-        
-        if tmg_exp_vars.exp_pref_presets == 'Unity':
-            tmg_exp_vars.exp_export_format = 'fbx'
-            scene.tmg_exp_vars.exp_uvs_name = 'UV'
-            scene.tmg_exp_vars.exp_uvs_start_int = 1
-        
-        if tmg_exp_vars.exp_pref_presets == 'Godot':
-            tmg_exp_vars.exp_export_format = 'GLTF_EMBEDDED'
-            scene.tmg_exp_vars.exp_uvs_name = 'UV_'
-            scene.tmg_exp_vars.exp_uvs_start_int = 1
-        
-        return {'FINISHED'}
+    return
     
 
 class TMG_Export_Properties(bpy.types.PropertyGroup):
     
     ## Menu Categories
-    exp_fbx_category : bpy.props.BoolProperty(default=False)
+    exp_category : bpy.props.BoolProperty(default=False)
     exp_object_category : bpy.props.BoolProperty(default=False)
     exp_uv_category : bpy.props.BoolProperty(default=False)
     exp_leaf_bones : bpy.props.BoolProperty(default=False, description='Add bone to armature ends')
 
-    use_collection_name : bpy.props.BoolProperty( name="Use Collection Name", default=True, description='Create folder using collection name' )
+    use_collection_name : bpy.props.BoolProperty( name="Use Collection Name", default=True, description='Exports into nested folder by collection name' )
     
-    exp_pref_presets : bpy.props.EnumProperty(name='Lightmap Resolution', default='UE4', description='Lightmap texture resolution to pack UVs in',
+    exp_pref_presets : bpy.props.EnumProperty(name='App Presets', default='UE4', description='Presets for different apps',
     items=[
     ('UE4', 'UE4', ''),
     ('Unity', 'Unity', ''),
@@ -45,26 +45,28 @@ class TMG_Export_Properties(bpy.types.PropertyGroup):
     exp_export_format : bpy.props.EnumProperty(name='Export Type', default='fbx', description='Export model filetype',
     items=[
     ('fbx', 'fbx', ''),
-    ('GLB', 'glb', ''),
-    ('GLTF_EMBEDDED', 'gltf', ''),
-    ('GLTF_SEPARATE', 'gltf+', '')])
+    ('obj', 'obj', ''),
+    ('glb', 'glb', ''),
+    ('gltf_embedded', 'gltf', ''),
+    ('gltf_separate', 'gltf+', '')])
     
     ## Default FBX Export Options
-    exp_directory : bpy.props.StringProperty(name='Directory', description='Sets the folder directory path for the FBX models to export to')
+    exp_directory : bpy.props.StringProperty(name='Directory', description='Sets the folder directory path for models to export into')
+    exp_folder_by_type : bpy.props.BoolProperty(default=False, description='Exports into nested folder by model type')
     exp_use_selection : bpy.props.BoolProperty(default=True, description='If you want to export only selected or everything in your blend file (Might not work correctly)')
-    exp_apply_unit_scale : bpy.props.BoolProperty(default=True, description='Takes into account current Blend Unit scale, else use FBX export scale')
-    exp_use_tspace : bpy.props.BoolProperty(default=True, description='Apply global space transforms to object rotations, else only axis space is written to FBX')
+    exp_apply_unit_scale : bpy.props.BoolProperty(default=True, description='Takes into account current Blend Unit scale, else use export units scale')
+    exp_use_tspace : bpy.props.BoolProperty(default=True, description='Apply global space transforms to object rotations, else only axis space is written to model file')
     exp_embed_textures : bpy.props.BoolProperty(default=False, description='Inclued textures used in the materials')
     exp_use_mesh_modifiers : bpy.props.BoolProperty(default=True, description='Apply modifiers to mesh objects !WARNING! prevents exporting shape keys')
     
     ## Object Transform Options
     exp_apply_mesh : bpy.props.BoolProperty(default=False, description='Converts object to Mesh applying everything !WARNING! will apply all modifiers')
-    exp_reset_location : bpy.props.BoolProperty(default=True, description='Sets Location values to 0')
+    exp_reset_location : bpy.props.BoolProperty(default=True, description='Sets Location values to 0 (Scene Origin)')
     exp_reset_rotation : bpy.props.BoolProperty(default=False, description='Sets Rotation values to 0')
     exp_reset_scale : bpy.props.BoolProperty(default=False, description='Sets Scale values to 0')
     
     ## UV Layer Options
-    exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel_', description='First part of the UV layer name')
+    exp_uvs_name : bpy.props.StringProperty(name='UV Names', default='UVChannel_', description='UV layer name')
     exp_pack_single_lightmap_uv : bpy.props.BoolProperty(default=False, description='Pack UV layer 2 to single UV area !WARNING! will unwrap the 2nd UV layer')
     exp_rename_uvs : bpy.props.BoolProperty(default=False, description='Sets UV layer names to UVChannel_1 and UVChannel_2')
     exp_uvs_start_int : bpy.props.IntProperty(name='UV Start Index', default=1, min=0, soft_max=1, step=1, description='Integer value placed at the end of UV layer names')
@@ -199,91 +201,123 @@ def _export(_col_name, _name, _path):
 
     print( platform.system() )
 
-    if tmg_exp_vars.exp_export_format == 'fbx':
-        if tmg_exp_vars.use_collection_name and _col_name:
-
-            
-
-            if not os.path.exists( str( _path + _col_name + _slash ) ):
-                os.mkdir( str( _path + _col_name + _slash ) )
-                _new_path = str( _path + _col_name + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
-            else:
-                _new_path = str( _path + _col_name + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
-        else:
-            _new_path = str( _path + _name + '.' + tmg_exp_vars.exp_export_format )
-
-        bpy.ops.export_scene.fbx(
-        filepath=_new_path, 
-        filter_glob='*.fbx', 
-        use_selection=scene.tmg_exp_vars.exp_use_selection, 
-        apply_unit_scale=scene.tmg_exp_vars.exp_apply_unit_scale, 
-        apply_scale_options='FBX_SCALE_NONE', 
-        object_types={'ARMATURE', 'EMPTY', 'MESH', 'CAMERA', 'LIGHT'}, 
-        axis_forward='-Z', 
-        axis_up='Y', 
-        mesh_smooth_type='EDGE', 
-        use_tspace=scene.tmg_exp_vars.exp_use_tspace, 
-        embed_textures=scene.tmg_exp_vars.exp_embed_textures,
-        use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,
-        add_leaf_bones=scene.tmg_exp_vars.exp_leaf_bones)
+    if tmg_exp_vars.exp_folder_by_type: 
+        if not os.path.exists( str( _path + tmg_exp_vars.exp_export_format + _slash ) ): os.mkdir( str( _path + tmg_exp_vars.exp_export_format + _slash ) )
+        if tmg_exp_vars.use_collection_name and not os.path.exists( str( _path + tmg_exp_vars.exp_export_format + _slash + _col_name + _slash ) ): os.mkdir( str( _path + tmg_exp_vars.exp_export_format + _slash + _col_name + _slash ) )
+    else: 
+        if tmg_exp_vars.use_collection_name and not os.path.exists( str( _path + _col_name + _slash ) ): os.mkdir( str( _path + _col_name + _slash ) )
         
-    elif tmg_exp_vars.exp_export_format == 'GLB' or tmg_exp_vars.exp_export_format == 'GLTF_EMBEDDED' or tmg_exp_vars.exp_export_format == 'GLTF_SEPARATE':
-        if tmg_exp_vars.use_collection_name and _col_name:
-            if not os.path.exists( str( _path + _col_name + _slash ) ):
-                os.mkdir( str( _path + _col_name + _slash ) )
-                _new_path = str( _path + _col_name + _slash + _name )
-            else:
-                _new_path = str( _path + _col_name + _slash + _name )
-        else:
-            _new_path = str( _path + _name )
+    if not tmg_exp_vars.exp_export_format == 'glb' or not tmg_exp_vars.exp_export_format == 'gltf_embedded' or not tmg_exp_vars.exp_export_format == 'gltf_separate':
+        if tmg_exp_vars.exp_folder_by_type and not tmg_exp_vars.use_collection_name: _new_path = str( _path + tmg_exp_vars.exp_export_format + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
+        elif tmg_exp_vars.exp_folder_by_type and tmg_exp_vars.use_collection_name and _col_name: _new_path = str( _path + tmg_exp_vars.exp_export_format + _slash + _col_name + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
+        elif not tmg_exp_vars.exp_folder_by_type and tmg_exp_vars.use_collection_name and _col_name: _new_path = str( _path + _col_name + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
+        else: _new_path = str( _path + _slash + _name + '.' + tmg_exp_vars.exp_export_format )
 
-        bpy.ops.export_scene.gltf(filepath=_new_path,
-#        check_existing=False, 
-        export_format=tmg_exp_vars.exp_export_format, 
-#        ui_tab='GENERAL', 
-#        export_copyright='', 
-        export_image_format='AUTO', 
-        export_texture_dir=_path, 
-        export_texcoords=True, 
-        export_normals=True, 
-        export_draco_mesh_compression_enable=False, 
-        export_draco_mesh_compression_level=6, 
-        export_draco_position_quantization=14, 
-        export_draco_normal_quantization=10, 
-        export_draco_texcoord_quantization=12, 
-        export_draco_color_quantization=10,
-        export_draco_generic_quantization=12, 
-        export_tangents=False, 
-        export_materials='EXPORT', 
-        export_colors=True, 
-        use_mesh_edges=True, 
-        use_mesh_vertices=False, 
-        export_cameras=True, 
-        export_selected=scene.tmg_exp_vars.exp_use_selection, 
-        use_selection=False, 
-        use_visible=False, 
-        use_renderable=False, 
-        use_active_collection=False, 
-        export_extras=False, 
-        export_yup=True, 
-        export_apply=scene.tmg_exp_vars.exp_use_mesh_modifiers, 
-        export_animations=True, 
-        export_frame_range=True, 
-        export_frame_step=1, 
-        export_force_sampling=True, 
-        export_nla_strips=True, 
-        export_def_bones=False, 
-        export_current_frame=False, 
-        export_skins=True, 
-        export_all_influences=False, 
-        export_morph=True, 
-        export_morph_normal=True, 
-        export_morph_tangent=False, 
-        export_lights=True, 
-        export_displacement=False, 
-#        will_save_settings=False, 
-#        filter_glob='*.glb;*.gltf'
-        )
+    if tmg_exp_vars.exp_export_format == 'fbx':
+        bpy.ops.export_scene.fbx(
+            filepath=_new_path, 
+            filter_glob='*.fbx', 
+            use_selection=scene.tmg_exp_vars.exp_use_selection, 
+            apply_unit_scale=scene.tmg_exp_vars.exp_apply_unit_scale, 
+            apply_scale_options='FBX_SCALE_NONE', 
+            object_types={'ARMATURE', 'EMPTY', 'MESH', 'CAMERA', 'LIGHT'}, 
+            axis_forward='-Z', 
+            axis_up='Y', 
+            mesh_smooth_type='EDGE', 
+            use_tspace=scene.tmg_exp_vars.exp_use_tspace, 
+            embed_textures=scene.tmg_exp_vars.exp_embed_textures,
+            use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers,
+            add_leaf_bones=scene.tmg_exp_vars.exp_leaf_bones)
+
+    elif tmg_exp_vars.exp_export_format == 'obj':
+        bpy.ops.export_scene.obj(
+            filepath=_new_path, 
+            # check_existing=False, 
+            # filter_glob='*.obj;*.mtl', 
+            use_selection=scene.tmg_exp_vars.exp_use_selection, 
+            # use_animation=False, 
+            use_mesh_modifiers=scene.tmg_exp_vars.exp_use_mesh_modifiers, 
+            use_edges=True, 
+            use_smooth_groups=False, 
+            use_smooth_groups_bitflags=False, 
+            use_normals=True, 
+            use_uvs=True, 
+            use_materials=True, 
+            use_triangles=False, 
+            use_nurbs=False, 
+            use_vertex_groups=False, 
+            use_blen_objects=True, 
+            group_by_object=False, 
+            group_by_material=False, 
+            keep_vertex_order=False, 
+            global_scale=1.0, 
+            path_mode='AUTO', 
+            axis_forward='-Z', 
+            axis_up='Y')
+        
+    elif tmg_exp_vars.exp_export_format == 'glb' or tmg_exp_vars.exp_export_format == 'gltf_embedded' or tmg_exp_vars.exp_export_format == 'gltf_separate':
+        if tmg_exp_vars.exp_folder_by_type and not tmg_exp_vars.use_collection_name: _new_path = str( _path + tmg_exp_vars.exp_export_format + _slash + _name )
+        elif tmg_exp_vars.exp_folder_by_type and tmg_exp_vars.use_collection_name and _col_name: _new_path = str( _path + tmg_exp_vars.exp_export_format + _slash + _col_name + _slash + _name )
+        elif not tmg_exp_vars.exp_folder_by_type and tmg_exp_vars.use_collection_name and _col_name: _new_path = str( _path + _col_name + _slash + _name )
+        else: _new_path = str( _path + _slash + _name )
+
+        bpy.ops.export_scene.gltf(filepath=_new_path, 
+            # check_existing=True, 
+            convert_lighting_mode='SPEC', 
+            gltf_export_id='', 
+            export_format=tmg_exp_vars.exp_export_format.upper(), 
+            # ui_tab='GENERAL', 
+            # export_copyright='', 
+            export_image_format='AUTO', 
+            export_texture_dir=_path, 
+            export_jpeg_quality=75, 
+            export_keep_originals=False, 
+            export_texcoords=True, 
+            export_normals=True, 
+            export_draco_mesh_compression_enable=False, 
+            export_draco_mesh_compression_level=6, 
+            export_draco_position_quantization=14, 
+            export_draco_normal_quantization=10, 
+            export_draco_texcoord_quantization=12, 
+            export_draco_color_quantization=10, 
+            export_draco_generic_quantization=12, 
+            export_tangents=False, 
+            export_materials='EXPORT', 
+            export_original_specular=False, 
+            export_colors=True, 
+            export_attributes=True, 
+            use_mesh_edges=True, 
+            use_mesh_vertices=False, 
+            export_cameras=True, 
+            use_selection=scene.tmg_exp_vars.exp_use_selection, 
+            use_visible=False, 
+            use_renderable=False, 
+            use_active_collection_with_nested=True, 
+            use_active_collection=False, 
+            use_active_scene=False, 
+            export_extras=False, 
+            export_yup=True, 
+            export_apply=scene.tmg_exp_vars.exp_use_mesh_modifiers, 
+            export_animations=True, 
+            export_frame_range=True, 
+            export_frame_step=1, 
+            export_force_sampling=True, 
+            export_nla_strips=True, 
+            export_nla_strips_merged_animation_name='Animation', 
+            export_def_bones=False, 
+            export_optimize_animation_size=False, 
+            export_anim_single_armature=True, 
+            export_reset_pose_bones=True, 
+            export_current_frame=False, 
+            export_skins=True, 
+            export_all_influences=False, 
+            export_morph=True, 
+            export_morph_normal=True, 
+            export_morph_tangent=False, 
+            export_lights=True, 
+            # will_save_settings=False, 
+            # filter_glob='*.glb'
+            )
         
     return{'FINISHED'}
 
@@ -311,6 +345,7 @@ def main(_directory):
     _mode_switch('OBJECT')
     
     _obs = _objs_loop(bpy.context.selected_objects)
+    _previous_obs = _obs
     _parents = []
     temp_list = []
     
@@ -381,7 +416,11 @@ def main(_directory):
             
     else:
         print('\nNo Objects')
-        
+    
+    bpy.ops.object.select_all(action='DESELECT')
+    for ob in _previous_obs:
+        ob.select_set(state=True)
+    bpy.context.view_layer.objects.active = _previous_obs[-1]
     print(str('Directory: ' + _path + '\nFINISHED'))
     return{'FINISHED'}
 
@@ -389,7 +428,7 @@ def main(_directory):
 class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
     bl_idname = 'wm.object_tmg_reset_properties'
     bl_label = 'Reset Properties'
-    bl_description = 'Resets FBX properties to default values'
+    bl_description = 'Resets export properties to default values'
     bl_options  = {'REGISTER', 'UNDO'}
         
     def execute(self, context):
@@ -432,9 +471,9 @@ class OBJECT_OT_TMG_Reset_Properties(bpy.types.Operator):
     
 
 class OBJECT_PT_TMG_Export(bpy.types.Operator):
-    """Export Mesh objects to folder directory path as individual FBX files"""
+    """Export Mesh objects to folder directory path as individual model files"""
     bl_idname = "object.tmg_export"
-    bl_label = "Export Batch (.fbx)"
+    bl_label = "Export Models To Files"
     bl_options  = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
@@ -447,7 +486,7 @@ class OBJECT_PT_TMG_Export(bpy.types.Operator):
 
 
 class OBJECT_PT_TMG_Select_Directory(Operator, ImportHelper):
-    """Select folder directory path for exported fbx models"""
+    """Select folder directory path for exported models"""
     bl_idname = "object.tmg_select_directory"
     bl_label = "Select Directory"
     bl_options  = {'REGISTER', 'UNDO'}
@@ -455,10 +494,10 @@ class OBJECT_PT_TMG_Select_Directory(Operator, ImportHelper):
     directory : bpy.props.StringProperty(subtype='FILE_PATH', options={'HIDDEN', 'SKIP_SAVE'})
 
     # ImportHelper mixin class uses this
-    filename_ext = ".fbx"
+    filename_ext = ".fbx;.obj;.glb;.gltf"
 
     filter_glob: StringProperty(
-        default="*.fbx",
+        default="*.fbx;*.obj;*.glb;*.gltf",
         options={'HIDDEN'},
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
@@ -473,7 +512,7 @@ class OBJECT_PT_TMG_Select_Directory(Operator, ImportHelper):
 class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
     bl_idname = 'OBJECT_PT_tmg_export_panel'
     bl_category = 'TMG'
-    bl_label = 'FBX Export Tools'
+    bl_label = 'Export Tools'
     bl_context = "objectmode"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -510,14 +549,14 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
         col = layout.column(align=True)
         row = col.row(align=True)
         
-        if scene.tmg_exp_vars.exp_fbx_category:
-            row.prop(tmg_exp_vars, 'exp_fbx_category', text='', icon='DOWNARROW_HLT')
+        if scene.tmg_exp_vars.exp_category:
+            row.prop(tmg_exp_vars, 'exp_category', text='', icon='DOWNARROW_HLT')
         else:
-            row.prop(tmg_exp_vars, 'exp_fbx_category', text='', icon='RIGHTARROW')
+            row.prop(tmg_exp_vars, 'exp_category', text='', icon='RIGHTARROW')
             
-        row.label(text='FBX Export Settings')
+        row.label(text='Export Settings')
         
-        if scene.tmg_exp_vars.exp_fbx_category:
+        if scene.tmg_exp_vars.exp_category:
             box = col.box()
             box_col = box.column(align=True)
             
@@ -530,7 +569,8 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box = col.box()
             box_col = box.column(align=True)
             
-            box_col.prop(tmg_exp_vars, 'use_collection_name')
+            box_col.prop(tmg_exp_vars, 'exp_folder_by_type', text='Folder by Type')
+            box_col.prop(tmg_exp_vars, 'use_collection_name', text='Collection Name')
             box_col.prop(tmg_exp_vars, 'exp_reset_location', text='Location to World Origin')
             box_col.prop(tmg_exp_vars, 'exp_apply_mesh', text='Visual Geometry to Mesh')
         
