@@ -1,13 +1,14 @@
 # TMG_Export_Tools
-A Blender 2.9x addon for batch exporting FBX objects
+A Blender 2.9x and 3.5x addon for batch exporting models to fbx, obj, and gltf
 
-[Current Release 0.1.7](https://github.com/Mainman002/TMG_Export_Tools/releases/tag/0.1.7)
+[Current Release 0.1.8](https://github.com/Mainman002/TMG_Export_Tools/releases/tag/0.1.8)
 
 v0.1.2 Video Tutorial
 https://youtu.be/aSEHSHSX51k
 
 ### Features include
 * Select export path with blender's File Browser
+* Export models into separate folders based on export type
 * Export models into separate folders based on collections
 * Game engine suggested defaults { UE4, Unity, Godot }
 * Export format selector { FBX, GLB, GLTF_Embedded, GLTF+Bin+Textures }
@@ -24,4 +25,4 @@ https://youtu.be/aSEHSHSX51k
 ### More features to come later as I work out a few things ;)
 
 ### Preview Image
-![image](https://user-images.githubusercontent.com/11281480/148879485-95235d1c-0ee9-42d8-a162-219c4141c059.png)
+![Screenshot 2023-04-03 at 8 27 14 AM](https://user-images.githubusercontent.com/11281480/229524034-997ba710-eb99-4e58-8473-04114ddc75d8.png)
