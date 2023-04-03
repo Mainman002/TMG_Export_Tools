@@ -25,4 +25,4 @@ https://youtu.be/aSEHSHSX51k
 ### More features to come later as I work out a few things ;)
 
 ### Preview Image
-![Screenshot 2023-04-03 at 8 27 14 AM](https://user-images.githubusercontent.com/11281480/229524034-997ba710-eb99-4e58-8473-04114ddc75d8.png)
+![Screenshot 2023-04-03 at 9 09 36 AM](https://user-images.githubusercontent.com/11281480/229534929-e6182082-2fdb-4a2e-8217-e00a8a205310.png)
