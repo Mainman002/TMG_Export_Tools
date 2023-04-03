@@ -570,7 +570,7 @@ class OBJECT_PT_TMG_Export_Panel(bpy.types.Panel):
             box_col = box.column(align=True)
             
             box_col.prop(tmg_exp_vars, 'exp_folder_by_type', text='Folder by Type')
-            box_col.prop(tmg_exp_vars, 'use_collection_name', text='Collection Name')
+            box_col.prop(tmg_exp_vars, 'use_collection_name', text='Folder by Collection')
             box_col.prop(tmg_exp_vars, 'exp_reset_location', text='Location to World Origin')
             box_col.prop(tmg_exp_vars, 'exp_apply_mesh', text='Visual Geometry to Mesh')
         
