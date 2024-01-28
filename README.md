@@ -1,7 +1,7 @@
 # TMG_Export_Tools
-A Blender 2.9x and 3.5x addon for batch exporting models to fbx, obj, and gltf
+A Blender 4.x addon for batch exporting models to fbx, obj, and gltf
 
-[Current Release 0.1.8](https://github.com/Mainman002/TMG_Export_Tools/releases/tag/0.1.8)
+[Current Release 0.2.0](https://github.com/Mainman002/TMG_Export_Tools/releases/tag/0.2.0)
 
 v0.1.2 Video Tutorial
 https://youtu.be/aSEHSHSX51k
