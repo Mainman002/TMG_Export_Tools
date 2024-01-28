@@ -13,8 +13,8 @@ bl_info = {
     "name": "TMG_Export_Tools",
     "author": "Johnathan Mueller",
     "descrtion": "A panel to batch export selected objects to fbx, obj, and gltf",
-    "blender": (2, 90, 0),
-    "version": (0, 1, 8),
+    "blender": (4, 0, 0),
+    "version": (0, 2, 0),
     "location": "View3D (ObjectMode) > Sidebar > TMG > Export_Tools Tab",
     "warning": "",
     "category": "Object"
